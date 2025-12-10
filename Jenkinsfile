@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USER = nilesh0824
+        DOCKERHUB_USER = "nilesh0824"
         IMAGE_NAME = 'cicd-python-app'
     }
 
