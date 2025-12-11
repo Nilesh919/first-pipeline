@@ -20,11 +20,12 @@ pipeline {
         }
 
         stage('Login to Docker Hub') {
-            steps {
-                sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
+           steps {
+              withCredentials([string(credentialsId: 'DOCKERHUB_PASS', variable: 'DOCKERHUB_PASS')]) {
+                 sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
             }
-        }
-
+          }
+       }
         stage('Push Image') {
             steps {
                 sh 'docker push $DOCKERHUB_USER/$IMAGE_NAME:$BUILD_NUMBER'
