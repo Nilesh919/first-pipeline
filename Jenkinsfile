@@ -1,42 +1,60 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKERHUB_USER = "nilesh0824"
-        IMAGE_NAME = 'cicd-python-app'
+    stages {
+
+        // Step 1: Clone code from GitHub (CI)
+        stage('Clone Code') {
+            steps {
+                git url: 'https://github.com/Nilesh919/first-pipeline.git', branch: 'main'
+            }
+        }
+
+        // Step 2: Build / Test the project (CI)
+        stage('Build & Test') {
+            steps {
+                sh 'echo "Building the app..."'
+                // Add actual build/test commands if you have any
+            }
+        }
+
+        // Step 3: Docker Build (CD)
+        stage('Docker Build') {
+            steps {
+                sh '''
+                # Use Minikube's Docker daemon
+                eval $(minikube -p minikube docker-env)
+
+                # Build Docker image
+                docker build -t myapp:latest .
+                '''
+            }
+        }
+
+        // Step 4: Deploy to Kubernetes (CD)
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh '''
+                # Apply Kubernetes deployment YAML
+                kubectl apply -f k8s-deployment.yaml
+
+                # Wait for rollout to complete
+                kubectl rollout status deployment/myapp -n rudra-app
+                '''
+            }
+        }
     }
 
-    stages {
-        stage('Clone') {
-            steps {
-                checkout scm
-            }
+    post {
+        success {
+            echo '✅ Pipeline completed successfully! Your app is deployed.'
         }
-
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t $DOCKERHUB_USER/$IMAGE_NAME:$BUILD_NUMBER .'
-            }
+        failure {
+            echo '❌ Pipeline failed. Check logs for errors.'
         }
+    }
+}
 
-        stage('Login to Docker Hub') {
-           steps {
-              withCredentials([string(credentialsId: 'DOCKERHUB_PASS', variable: 'DOCKERHUB_PASS')]) {
-                 sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
-            }
-          }
-       }
-        stage('Push Image') {
-            steps {
-                sh 'docker push $DOCKERHUB_USER/$IMAGE_NAME:$BUILD_NUMBER'
-            }
-        }
-
-        stage('Deploy Container') {
-            steps {
-                sh 'docker stop cicd-app || true'
-                sh 'docker rm cicd-app || true'
-                sh 'docker run -d --name cicd-app -p 5000:5000 $DOCKERHUB_USER/$IMAGE_NAME:$BUILD_NUMBER'
             }
         }
     }
